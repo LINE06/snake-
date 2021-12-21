@@ -1,0 +1,165 @@
+import pygame
+import sys
+import random
+
+
+## Represente le serpent qui bouge
+class Snake():
+    def __init__(self):
+        self.length = 1 # initialisation à 1 de la longueur du serpent
+        self.positions = [((screen_width/2), (screen_height/2))] # liste des positions xy pour chaque bloc qui composes le serpent. Initialisation de la position au centre
+        self.direction = random.choice([up, down, left, right]) # la direction vers laquelle il se dirige. début dans vers une direction aléatoire
+        self.color = (17, 24, 47) # sa couleur  (bleu)
+
+        self.score = 0 # le score initial
+
+##fonction qui renverra la position de la tête du serpent qui est stockée dans la fonction  : liste de position créée plus tôt
+    def get_head_position(self):
+        return self.positions[0]
+
+## fonction qui définie les mouvements du serpent:  si le serpend ne fait q'un bloc, il peut se déplacer dans l'une des 4 directions mais si il est plus long alors il n'a que 3 directions possibles (pas vers sa queu)
+    def turn(self, point):
+        if self.length > 1 and (point[0]*-1, point[1]*-1) == self.direction:
+            return
+        else:
+            self.direction = point
+
+#pour bouger le serpent
+    def move(self):
+        cur = self.get_head_position() # permet d'obtenir la position de la tête du serpent
+        x,y = self.direction # direction actuelle du serpent en accédant à la propriété direction du serpent
+        new = (((cur[0]+(x*gridsize))%screen_width), (cur[1]+(y*gridsize))%screen_height) # en utilisant la taille de la grille et la largeur de l'écran on calcule le nouvel emplacement de la tête du serpent
+        if len(self.positions) > 2 and new in self.positions[2:]:
+            self.reset()# si la longueur du serpent est supérieure à 2 et le nouvel emplacement de la tête du serpent chevauche n'importe quelle autre du serpent : le jeu se termine. Ici on réinitalise le serpent avec la fonction reset(self)
+        else:
+            self.positions.insert(0,new)
+            if len(self.positions) > self.length:
+                self.positions.pop()# sinon on ajouter la nouvelle position de la tête au début de la liste des positions et supprimons le dernier élément
+
+##réinitialise le serpent aux valeurs par défaut
+    def reset(self):
+        self.length = 1
+        self.positions = [((screen_width/2), (screen_height/2))]
+        self.direction = random.choice([up, down, left, right])
+        self.score = 0
+
+## permet d'afficher le serpent sur la surface de l'écran . Elles dessine un bloc pour chaques positions xy du serpent en utilisant des propriétés de pygame
+    def draw(self,surface):
+        for p in self.positions:
+            r = pygame.Rect((p[0], p[1]), (gridsize,gridsize))
+            pygame.draw.rect(surface, self.color, r)
+            pygame.draw.rect(surface, (93,216, 228), r, 1)
+
+
+## fonction qui gère lorsque le joueur appuie sur une touche
+    def handle_keys(self):
+        for event in pygame.event.get():
+            # si le joueur veut quitter le jeu alors on doit quitter pygame et le programme python avec la méthode sys.exit()
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            # sinon on regarde si c un clic haut , bas , gauche , droite pour tourner le serpent en conséquence
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    self.turn(up)
+                elif event.key == pygame.K_DOWN:
+                    self.turn(down)
+                elif event.key == pygame.K_LEFT:
+                    self.turn(left)
+                elif event.key == pygame.K_RIGHT:
+                    self.turn(right)
+
+###représente la nourriture du serpent
+class Food():
+    def __init__(self):
+        self.position = (0,0) #position xy
+        self.color = (223, 163, 49) # couleur
+        self.randomize_position() # position aléatoire avec la fonction randomize_position()
+
+##permet de donner une position aléatoire à la nourriture
+    def randomize_position(self):
+        self.position = (random.randint(0, grid_width-1)*gridsize, random.randint(0, grid_height-1)*gridsize)
+
+##permet d'avoir une représentation de la nourriture.
+    def draw(self, surface):
+        r = pygame.Rect((self.position[0], self.position[1]), (gridsize, gridsize))
+        pygame.draw.rect(surface, self.color, r)
+        pygame.draw.rect(surface, (93, 216, 228), r, 1)
+
+## fonction différenciée des classes food et snake. Double boucle for qui va parcourir chaque coordonnée xy de notre grille pour faire de la grille un arrière-plan en damier
+def drawGrid(surface):
+    for y in range(0, int(grid_height)):
+        for x in range(0, int(grid_width)):
+            if (x+y)%2 == 0: # on verifie si x+y est divisible par deux. Si c'est le cas, on dessine alors un carré à cette position en utilisant les fonction : pygame.rect et pygame.draw.rect
+                r = pygame.Rect((x*gridsize, y*gridsize), (gridsize,gridsize))
+                pygame.draw.rect(surface,(93,216,228), r)
+            else:
+                rr = pygame.Rect((x*gridsize, y*gridsize), (gridsize,gridsize))
+                pygame.draw.rect(surface, (84,194,205), rr)
+
+##quelques variables globales qui donnent les caractéristiques importantes du jeu
+
+# largeur et longueure de la fenêtre
+screen_width = 480
+screen_height = 480
+
+# la taille de la grille
+gridsize = 20
+grid_width = screen_width/gridsize
+grid_height = screen_height/gridsize
+
+# les mouvements possibles du serpent
+up = (0,-1)
+down = (0,1)
+left = (-1,0)
+right = (1,0)
+
+##!!!  La boucle principale du jeu !!!
+# une fois qu'une action se produit la boucle principale va appeler les fonctions et méthodes spécifiques définies plus haut
+
+# cette boucle fonctionnera en continue jusqu'à ce que le jeu soit terminé
+
+
+def main():
+    pygame.init()  #permet de créer l'écran et l'environnement de jeu avec le module pygame
+
+
+# on initialise le jeu et l'horloge du jeu qui garderons une trace de chaque action à un moment donné
+    clock = pygame.time.Clock()
+    screen = pygame.display.set_mode((screen_width, screen_height), 0, 32)
+
+# on dessine l'écran et la surface qui sont mis à jour chaque fois qu'une action est effectuée
+
+    surface = pygame.Surface(screen.get_size())
+    surface = surface.convert()
+    drawGrid(surface)
+
+    snake = Snake()
+    food = Food()
+    myfont = pygame.font.SysFont("monospace",16)
+
+# cette boucle se répétera jusqu'à ce que le jeu soit terminé
+    while (True):
+        clock.tick(10) #on initialise l'horloge à 10 images/ seconde
+        snake.handle_keys()
+        drawGrid(surface) # on remplit à nouveau la surface en bleu
+        snake.move() # on bouge le serpent en fonction de la touche pressée ( voir fonction handle_keys())
+        # on vérifie si la position de la tête est la mm que la position de la nourriture . Si c'est le cas, cv dire que le serpent a mangé la nourriture donc:
+        if snake.get_head_position() == food.position:
+            # + 1 à la longueur du serpent
+            snake.length += 1
+            # + score
+            snake.score += 1
+            # on fait apparaître un nouveau bloc de  nourriture dans un endroit aléatoire
+            food.randomize_position()
+        # on redessine le serpent et la nourriture
+        snake.draw(surface)
+        food.draw(surface)
+        screen.blit(surface, (0,0)) #une fois qu'une action se produit dans le jeu on met à jour et on actualise l'écran et la surface (voir aussipygame.display.update())
+
+        # permet d'afficher le score du jeu sous forme de case dans le coin supérieur gauche du jeu
+        text = myfont.render("Score {0}".format(snake.score), 1, (0,0,0))
+        screen.blit(text, (5,10))
+        pygame.display.update()
+
+main()
